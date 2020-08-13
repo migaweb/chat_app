@@ -1,8 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import '../pickers/user_image_picker.dart';
 
 class AuthForm extends StatefulWidget {
   final void Function(String email, String password, String username,
-      bool isLogin, BuildContext ctx) onSubmit;
+      File userImage, bool isLogin, BuildContext ctx) onSubmit;
   final bool _isLoading;
 
   AuthForm(this.onSubmit, this._isLoading);
@@ -17,16 +20,31 @@ class _AuthFormState extends State<AuthForm> {
   String _userEmail = '';
   String _username = '';
   String _userPassword = '';
+  File _userImageFile;
+
+  void _imagePickerFn(File pickedImage) {
+    _userImageFile = pickedImage;
+  }
 
   void _trySubmit() {
     final isValid = _formKey.currentState.validate();
 
     FocusScope.of(context).unfocus(); // Close keyboard
 
+    if (!_isLogin && _userImageFile == null) {
+      Scaffold.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please pick an image!'),
+          backgroundColor: Theme.of(context).errorColor,
+        ),
+      );
+      return;
+    }
     if (isValid) {
       _formKey.currentState.save();
 
-      widget.onSubmit(_userEmail, _userPassword, _username, _isLogin, context);
+      widget.onSubmit(_userEmail, _userPassword, _username, _userImageFile,
+          _isLogin, context);
     }
   }
 
@@ -44,9 +62,11 @@ class _AuthFormState extends State<AuthForm> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  if (!_isLogin) UserImagePicker(_imagePickerFn),
                   TextFormField(
                     key: ValueKey('Email'),
                     keyboardType: TextInputType.emailAddress,
+                    textCapitalization: TextCapitalization.none,
                     decoration: InputDecoration(
                       labelText: 'Email address',
                     ),
@@ -63,6 +83,9 @@ class _AuthFormState extends State<AuthForm> {
                   if (!_isLogin)
                     TextFormField(
                       key: ValueKey('Username'),
+                      textCapitalization: TextCapitalization.words,
+                      autocorrect: true,
+                      enableSuggestions: false,
                       decoration: InputDecoration(labelText: 'Username'),
                       validator: (value) {
                         if (value.isEmpty || value.length < 4) {

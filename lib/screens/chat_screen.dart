@@ -1,9 +1,35 @@
 import 'package:flutter/material.dart';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../widgets/chat/messages.dart';
+import '../widgets/chat/new_message.dart';
 
-class ChatScreen extends StatelessWidget {
+class ChatScreen extends StatefulWidget {
+  @override
+  _ChatScreenState createState() => _ChatScreenState();
+}
+
+class _ChatScreenState extends State<ChatScreen> {
+  @override
+  void initState() {
+    super.initState();
+    final fbm = FirebaseMessaging();
+    fbm.requestNotificationPermissions();
+    fbm.configure(onMessage: (msg) {
+      //print(msg);
+      return;
+    }, onLaunch: (msg) {
+      //print(msg);
+      return;
+    }, onResume: (msg) {
+      //print(msg);
+      return;
+    });
+    //fbm.getToken(); specific device..
+    fbm.subscribeToTopic('chat');
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -12,6 +38,7 @@ class ChatScreen extends StatelessWidget {
         title: Text('Flutter Chat'),
         actions: [
           DropdownButton(
+            underline: Container(),
             icon: Icon(Icons.more_vert, color: theme.primaryIconTheme.color),
             items: [
               DropdownMenuItem(
@@ -33,30 +60,15 @@ class ChatScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: StreamBuilder(
-        stream: Firestore.instance
-            .collection('chats/iTcIYIW26ZIxSLuD4cPt/messages')
-            .snapshots(),
-        builder: (ctx, streamSnapshot) {
-          if (streamSnapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          }
-          final documents = streamSnapshot.data.documents;
-          return ListView.builder(
-            itemCount: documents.length,
-            itemBuilder: (ctx, i) => Container(
-                padding: EdgeInsets.all(8.0),
-                child: Text(documents[i]['text'])),
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        child: Icon(Icons.add),
-        onPressed: () {
-          Firestore.instance
-              .collection('chats/iTcIYIW26ZIxSLuD4cPt/messages')
-              .add({'text': 'This was added by clicking the button.'});
-        },
+      body: Container(
+        child: Column(
+          children: [
+            Expanded(
+              child: Messages(),
+            ),
+            NewMessage(),
+          ],
+        ),
       ),
     );
   }
